@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tiệm Thuốc Dược Sĩ Gen Z - Pharmacy Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .pixel-font {
+      font-family: 'VT323', monospace;
+    }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    .animate-bob {
+      animation: bob 2.2s ease-in-out infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-ring {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #94a3b8;
+      border-radius: 9999px;
+    }
+    .shelf-grid {
+      background-image: linear-gradient(to bottom, #f1f5f9 2px, transparent 2px);
+      background-size: 100% 48px;
+    }
+  </style>
+</head>
+<body class="bg-emerald-950 text-slate-800 min-h-screen flex flex-col justify-between overflow-x-hidden antialiased">
+
+  <header class="bg-emerald-900 border-b border-emerald-800 text-white shadow-lg sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-400 to-emerald-300 flex items-center justify-center text-emerald-950 font-black text-xl shadow-md">
+          Rx
+        </div>
+        <div>
+          <h1 class="font-extrabold text-base sm:text-lg tracking-wide flex items-center gap-2">
+            NHÀ THUỐC XANH
+            <span class="text-xs bg-emerald-700 text-emerald-200 px-2 py-0.5 rounded-full font-medium">GPP Standard</span>
+          </h1>
+          <p class="text-xs text-emerald-300 font-medium" id="pharmacist-rank">Cấp bậc: Dược Sĩ Tập Sự</p>
+        </div>
+      </div>
+
+      <!-- Live metrics -->
+      <div class="flex items-center gap-3 sm:gap-6 text-sm">
+        <div class="bg-emerald-950/70 border border-emerald-700/50 px-3 py-1.5 rounded-xl flex items-center gap-2">
+          <span class="text-amber-400 text-lg">🪙</span>
+          <div>
+            <div class="text-[10px] text-emerald-400 font-semibold uppercase">Doanh thu</div>
+            <div class="font-bold text-amber-300 text-sm sm:text-base tracking-wide" id="money-display">0 đ</div>
+          </div>
+        </div>
+
+        <div class="bg-emerald-950/70 border border-emerald-700/50 px-3 py-1.5 rounded-xl flex items-center gap-2">
+          <span class="text-rose-400 text-lg">❤️</span>
+          <div>
+            <div class="text-[10px] text-emerald-400 font-semibold uppercase">Uy tín quầy</div>
+            <div class="font-bold text-rose-300 text-sm sm:text-base" id="rep-display">100%</div>
+          </div>
+        </div>
+
+        <div class="bg-emerald-950/70 border border-emerald-700/50 px-3 py-1.5 rounded-xl flex items-center gap-2">
+          <span class="text-blue-400 text-lg">⭐</span>
+          <div>
+            <div class="text-[10px] text-emerald-400 font-semibold uppercase">Điểm Dược Học</div>
+            <div class="font-bold text-white text-sm sm:text-base" id="score-display">0</div>
+          </div>
+        </div>
+
+        <!-- Audio mute toggle button -->
+        <button id="sound-btn" onclick="toggleSound()" class="p-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-emerald-200 transition-colors" title="Bật/Tắt âm thanh">
+          🔊
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl w-full mx-auto p-3 sm:p-4 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4">
+    
+    <!-- LEFT COLUMN: The Counter, Customer, and Patient dialogue (5 cols) -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+      
+      <!-- Counter Booth & Customer Scene -->
+      <div class="relative bg-gradient-to-b from-sky-100 via-teal-50 to-emerald-100 rounded-3xl p-5 border-4 border-emerald-800 shadow-xl overflow-hidden flex flex-col justify-between min-h-[380px]">
+        <!-- Pharmacy Background Decor (Cross, Certificates, Clock) -->
+        <div class="absolute top-3 left-4 flex items-center gap-2 text-xs font-semibold text-emerald-800 bg-white/70 backdrop-blur px-2.5 py-1 rounded-full border border-emerald-200">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+          Đang phục vụ
+        </div>
+
+        <div class="absolute top-3 right-4 flex items-center gap-1.5 bg-white/80 px-2 py-0.5 rounded-lg shadow-sm text-xs font-bold text-slate-700">
+          <span>⏰</span> <span id="clock-display">08:30 AM</span>
+        </div>
+
+        <!-- Customer Avatar Area -->
+        <div class="mt-8 flex flex-col items-center justify-center relative">
+          <!-- Patience Bar -->
+          <div class="w-48 bg-slate-200 rounded-full h-2.5 mb-3 overflow-hidden border border-slate-300">
+            <div id="patience-bar" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-300" style="width: 100%;"></div>
+          </div>
+
+          <!-- Customer Graphic -->
+          <div id="customer-avatar-box" class="w-32 h-32 rounded-3xl bg-white/80 p-3 shadow-md border-2 border-emerald-300 flex items-center justify-center animate-bob transition-transform">
+            <span id="customer-avatar" class="text-7xl">👵</span>
+          </div>
+          <div id="customer-name" class="mt-2 text-xs font-bold text-emerald-950 bg-emerald-200/90 px-3 py-0.5 rounded-full shadow-sm">
+            Bác Năm (62 tuổi)
+          </div>
+        </div>
+
+        <!-- Dialogue / Symptom Prescription Card -->
+        <div class="mt-4 bg-white/95 backdrop-blur rounded-2xl p-4 border border-emerald-200 shadow-md">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+              💬 Lời kể bệnh nhân
+            </span>
+            <span id="case-badge" class="text-[10px] font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">
+              Kê đơn tự do (OTC)
+            </span>
+          </div>
+          <p id="symptom-text" class="text-sm font-medium text-slate-700 leading-relaxed min-h-[44px]">
+            "Dược sĩ ơi, bác thấy đau đầu nhức trán suốt từ sáng tới giờ, hơi hâm hấp sốt, bán bác vỉ thuốc gì uống đỡ liền với!"
+          </p>
+        </div>
+
+        <!-- Counter Desk Bottom Edge -->
+        <div class="h-6 -mx-5 -mb-5 bg-amber-800 border-t-4 border-amber-950 flex items-center justify-center">
+          <div class="w-24 h-1.5 bg-amber-700 rounded-full"></div>
+        </div>
+      </div>
+
+      <!-- Action Panel: Pharmacist Consultation & Dispense Area -->
+      <div class="bg-slate-900 border-2 border-emerald-700 rounded-3xl p-4 text-white shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+            <span>💊</span> Khay thuốc chuẩn bị giao
+          </h2>
+          <button onclick="clearTray()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold underline">
+            Lấy lại
+          </button>
+        </div>
+
+        <!-- Selected Medicine Tray -->
+        <div id="medicine-tray" class="bg-slate-950 border border-dashed border-slate-700 rounded-2xl min-h-[72px] p-2 flex items-center justify-center text-xs text-slate-500 gap-2 flex-wrap">
+          Chưa chọn thuốc nào từ kệ...
+        </div>
+
+        <!-- Pharmacist Counseling Selection -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+            📢 Lời dặn dược sĩ (Counseling - Tăng điểm chuyên môn):
+          </label>
+          <div class="grid grid-cols-1 gap-1.5" id="counseling-options">
+            <!-- Populated dynamically based on symptoms -->
+          </div>
+        </div>
+
+        <!-- Dispense Button -->
+        <button id="dispense-btn" onclick="submitPrescription()" class="w-full mt-2 py-3 rounded-2xl font-black text-sm tracking-wide bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-emerald-950 shadow-lg shadow-emerald-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+          <span>BÁN THUỐC VÀ TƯ VẤN</span>
+          <span>➔</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: Pharmacy Shelves and Drug Inventory (7 cols) -->
+    <section class="lg:col-span-7 bg-slate-900 border-2 border-emerald-800 rounded-3xl p-4 sm:p-5 text-white shadow-xl flex flex-col justify-between">
+      <div>
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800">
+          <div>
+            <h2 class="font-extrabold text-base sm:text-lg text-emerald-300 flex items-center gap-2">
+              🏪 Tủ Thuốc Chuẩn GPP
+            </h2>
+            <p class="text-xs text-slate-400">Chọn đúng thuốc theo hoạt chất & chỉ định</p>
+          </div>
+
+          <!-- Category filter buttons -->
+          <div class="flex items-center gap-1 overflow-x-auto custom-scroll py-1 max-w-full" id="category-tabs">
+            <button onclick="filterShelf('all')" class="cat-tab px-2.5 py-1 text-xs rounded-lg font-semibold bg-emerald-600 text-white transition-all">Tất cả</button>
+            <button onclick="filterShelf('ha-sot')" class="cat-tab px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Hạ sốt - Giảm đau</button>
+            <button onclick="filterShelf('ho-hap')" class="cat-tab px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Hô hấp & Dị ứng</button>
+            <button onclick="filterShelf('tieu-hoa')" class="cat-tab px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Tiêu hóa</button>
+            <button onclick="filterShelf('khang-sinh')" class="cat-tab px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Kháng sinh</button>
+            <button onclick="filterShelf('dung-cu')" class="cat-tab px-2.5 py-1 text-xs rounded-lg font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Vật tư & Bổ trợ</button>
+          </div>
+        </div>
+
+        <!-- Drug Grid Display -->
+        <div id="drugs-grid" class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-2.5 max-h-[460px] overflow-y-auto custom-scroll pr-1">
+          <!-- Drug cards will be injected by JavaScript -->
+        </div>
+      </div>
+
+      <!-- Pharmacology Quick Guide & GitHub Help Bar -->
+      <div class="mt-4 pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <button onclick="openHandbook()" class="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-bold bg-emerald-950/80 px-3 py-2 rounded-xl border border-emerald-800">
+          <span>📖</span> Sổ tay Dược lý lâm sàng
+        </button>
+
+        <button onclick="openDeployGuide()" class="flex items-center gap-1.5 text-amber-300 hover:text-amber-200 font-bold bg-amber-950/50 px-3 py-2 rounded-xl border border-amber-800">
+          <span>🚀</span> Hướng dẫn đưa lên GitHub Pages
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL: Feedback & Result -->
+  <div id="result-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl transform transition-all border-4" id="modal-card">
+      <div id="modal-icon" class="text-6xl mb-3">🎉</div>
+      <h3 id="modal-title" class="text-xl font-extrabold text-slate-800 mb-1">Xuất sắc, thưa Dược sĩ!</h3>
+      <p id="modal-desc" class="text-sm text-slate-600 mb-4 leading-relaxed font-medium">Khách hàng rất hài lòng với đơn thuốc và lời dặn tận tình của bạn.</p>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 text-left text-xs space-y-1 mb-5" id="modal-breakdown">
+        <!-- Revenue & Points breakdown -->
+      </div>
+
+      <button onclick="closeResultModal()" class="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition-all">
+        Tiếp đón khách tiếp theo (Space)
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: Pharmacology Handbook -->
+  <div id="handbook-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-emerald-700 text-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl flex flex-col max-h-[85vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 class="text-lg font-black text-emerald-400 flex items-center gap-2">
+          <span>📚</span> Sổ Tay Dược Học Thu Gọn (Clinical Cheat-Sheet)
+        </h3>
+        <button onclick="closeHandbook()" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
+      </div>
+
+      <div class="overflow-y-auto custom-scroll my-4 space-y-3 pr-2 text-xs sm:text-sm">
+        <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700">
+          <span class="font-bold text-amber-300">1. Paracetamol (Hạ sốt - Giảm đau):</span>
+          <p class="text-slate-300 mt-1">Chỉ định đau đầu, sốt. Liều tối đa 4g/ngày ở người lớn. Lời dặn: Không uống rượu bia, cách nhau tối thiểu 4 - 6 tiếng.</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700">
+          <span class="font-bold text-amber-300">2. Kháng sinh Amoxicillin (Beta-lactam):</span>
+          <p class="text-slate-300 mt-1">Chỉ dùng khi có nhiễm khuẩn (rát họng mưng mủ, có chỉ định). Lời dặn: Phải uống đủ liệu trình 5 - 7 ngày, tránh kháng thuốc.</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700">
+          <span class="font-bold text-amber-300">3. Oresol (Bù nước & Điện giải):</span>
+          <p class="text-slate-300 mt-1">Chỉ định tiêu chảy, nôn ói, mất nước. Lời dặn sống còn: Phải pha chính xác tỷ lệ nước ghi trên gói, không pha quá đặc gây tai biến áp lực thẩm thấu!</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700">
+          <span class="font-bold text-amber-300">4. Men vi sinh (Probiotics) & Kháng sinh:</span>
+          <p class="text-slate-300 mt-1">Lời dặn: Nếu uống kèm kháng sinh, phải uống cách xa nhau tối thiểu 2 giờ để lợi khuẩn không bị kháng sinh tiêu diệt.</p>
+        </div>
+      </div>
+
+      <button onclick="closeHandbook()" class="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 font-bold text-sm">
+        Đã hiểu, quay lại quầy
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: GitHub Deploy Guide -->
+  <div id="deploy-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-600 text-white rounded-3xl max-w-lg w-full p-6 shadow-2xl flex flex-col max-h-[85vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 class="text-lg font-black text-amber-400 flex items-center gap-2">
+          <span>🐙</span> 4 Bước Đưa Game Lên GitHub Pages
+        </h3>
+        <button onclick="closeDeployGuide()" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
+      </div>
+
+      <div class="my-4 space-y-3 text-xs sm:text-sm text-slate-300 overflow-y-auto custom-scroll">
+        <p><strong class="text-amber-300">Bước 1:</strong> Tải tệp này về máy tính, đặt tên chính xác là <code class="bg-slate-800 text-emerald-400 px-1.5 py-0.5 rounded">index.html</code>.</p>
+        <p><strong class="text-amber-300">Bước 2:</strong> Vào <code class="text-teal-300">github.com</code> ➔ Nhấn <strong>New Repository</strong> ➔ Đặt tên là <code class="text-emerald-400">quay-thuoc-vui</code> ➔ Chọn <strong>Public</strong> ➔ Nhấn <strong>Create repository</strong>.</p>
+        <p><strong class="text-amber-300">Bước 3:</strong> Kéo thả file <code class="text-emerald-400">index.html</code> vào trang vừa tạo rồi nhấn <strong>Commit changes</strong>.</p>
+        <p><strong class="text-amber-300">Bước 4:</strong> Vào tab <strong>Settings</strong> ➔ Chọn mục <strong>Pages</strong> bên trái ➔ Phần Branch chọn <strong>main</strong> và nhấn <strong>Save</strong>. Sau 1 phút bạn sẽ có link web như: <br><span class="text-amber-400 font-mono text-xs">https://ten-ban.github.io/quay-thuoc-vui/</span></p>
+      </div>
+
+      <button onclick="closeDeployGuide()" class="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-sm">
+        Đã nắm rõ quy trình!
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* Audio synthesizer using Web Audio API (No external sound files required) */
+    let audioCtx = null;
+    let isSoundMuted = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.1) {
+      if (isSoundMuted) return;
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        console.warn("Audio unavailable", e);
+      }
+    }
+
+    function soundCoin() {
+      playTone(587.33, 'triangle', 0.1, 0.15); // D5
+      setTimeout(() => playTone(880, 'triangle', 0.25, 0.15), 90); // A5
+    }
+
+    function soundClick() {
+      playTone(400, 'sine', 0.05, 0.08);
+    }
+
+    function soundError() {
+      playTone(220, 'sawtooth', 0.25, 0.15);
+      setTimeout(() => playTone(180, 'sawtooth', 0.3, 0.15), 120);
+    }
+
+    function soundSuccess() {
+      playTone(523.25, 'sine', 0.12, 0.12);
+      setTimeout(() => playTone(659.25, 'sine', 0.12, 0.12), 100);
+      setTimeout(() => playTone(783.99, 'sine', 0.2, 0.15), 200);
+    }
+
+    function toggleSound() {
+      isSoundMuted = !isSoundMuted;
+      document.getElementById('sound-btn').innerText = isSoundMuted ? '🔇' : '🔊';
+    }
+
+    const DRUG_DATABASE = [
+      {
+        id: 'para500',
+        name: 'Paracetamol 500mg',
+        cat: 'ha-sot',
+        type: 'Viên nén',
+        icon: '💊',
+        color: 'from-blue-500/20 to-indigo-500/20 border-blue-500/40',
+        desc: 'Hạ sốt, giảm đau đầu mỏi người nhẹ đến vừa.',
+        price: 15000
+      },
+      {
+        id: 'ibuprofen',
+        name: 'Ibuprofen 400mg (NSAID)',
+        cat: 'ha-sot',
+        type: 'Viên bao phim',
+        icon: '🔴',
+        color: 'from-rose-500/20 to-red-500/20 border-rose-500/40',
+        desc: 'Giảm đau kháng viêm: đau răng, bong gân.',
+        price: 35000
+      },
+      {
+        id: 'loratadine',
+        name: 'Loratadine 10mg',
+        cat: 'ho-hap',
+        type: 'Kháng Histamin H1',
+        icon: '🌸',
+        color: 'from-pink-500/20 to-purple-500/20 border-pink-500/40',
+        desc: 'Dị ứng thời tiết, hắt hơi, ngứa mũi, mày đay.',
+        price: 25000
+      },
+      {
+        id: 'siro-ho',
+        name: 'Siro Ho Bổ Phế Thảo Dược',
+        cat: 'ho-hap',
+        type: 'Siro 100ml',
+        icon: '🍯',
+        color: 'from-amber-500/20 to-yellow-500/20 border-amber-500/40',
+        desc: 'Giảm ho khan, dịu họng, loãng đờm.',
+        price: 45000
+      },
+      {
+        id: 'amoxicillin',
+        name: 'Amoxicillin 500mg',
+        cat: 'khang-sinh',
+        type: 'Kháng sinh kê đơn',
+        icon: '☣️',
+        color: 'from-violet-500/20 to-purple-500/20 border-violet-500/40',
+        desc: 'Nhiễm khuẩn hô hấp, viêm họng mủ có đơn BS.',
+        price: 55000
+      },
+      {
+        id: 'oresol',
+        name: 'Gói Bù Nước Oresol 245',
+        cat: 'tieu-hoa',
+        type: 'Bột pha dung dịch',
+        icon: '💧',
+        color: 'from-cyan-500/20 to-blue-500/20 border-cyan-500/40',
+        desc: 'Bù nước & chất điện giải khi tiêu chảy, sốt cao.',
+        price: 10000
+      },
+      {
+        id: 'probiotics',
+        name: 'Men Vi Sinh (Lactobacillus)',
+        cat: 'tieu-hoa',
+        type: 'Ống vi sinh',
+        icon: '🦠',
+        color: 'from-emerald-500/20 to-teal-500/20 border-emerald-500/40',
+        desc: 'Cân bằng hệ khuẩn ruột, ngừa rối loạn tiêu hóa.',
+        price: 40000
+      },
+      {
+        id: 'c-sui',
+        name: 'Viên Sủi Vitamin C 1000mg',
+        cat: 'dung-cu',
+        type: 'Viên sủi',
+        icon: '🍊',
+        color: 'from-orange-500/20 to-amber-500/20 border-orange-500/40',
+        desc: 'Tăng sức đề kháng, chống oxy hóa mệt mỏi.',
+        price: 30000
+      },
+      {
+        id: 'nuoc-muoi',
+        name: 'Nước Muối Sinh Lý 0.9%',
+        cat: 'dung-cu',
+        type: 'Lọ 10ml',
+        icon: '👁️',
+        color: 'from-sky-500/20 to-teal-500/20 border-sky-500/40',
+        desc: 'Rửa mắt, làm sạch bụi bẩn, dịu rát mắt.',
+        price: 8000
+      },
+      {
+        id: 'dau-gio',
+        name: 'Dầu Gió Xanh Thiên Nhiên',
+        cat: 'dung-cu',
+        type: 'Chai xoa bóp',
+        icon: '🍃',
+        color: 'from-lime-500/20 to-emerald-500/20 border-lime-500/40',
+        desc: 'Xua tan cảm mạo, nhức mỏi, say xe chóng mặt.',
+        price: 28000
+      }
+    ];
+
+    const CUSTOMER_CASES = [
+      {
+        customerName: 'Bác Năm (62 tuổi)',
+        avatar: '👵',
+        caseType: 'Sốt & Nhức đầu (OTC)',
+        symptom: '"Dược sĩ ơi, bác thấy đau đầu nhức trán suốt từ sáng tới giờ, hơi hâm hấp sốt, bán bác vỉ thuốc gì uống đỡ liền với!"',
+        correctDrugId: 'para500',
+        correctCounselingId: 'counsel_para',
+        counselingOptions: [
+          { id: 'counsel_para', text: 'Uống sau ăn no, uống cách nhau ít nhất 4 - 6 tiếng, tuyệt đối không uống cùng rượu bia!' },
+          { id: 'counsel_empty', text: 'Đói bụng uống ngay 2 viên dồn một lúc cho nhanh hết bệnh.' },
+          { id: 'counsel_milk', text: 'Pha với sữa nóng uống kèm cho bổ.' }
+        ],
+        tipText: 'Paracetamol chuyển hóa qua gan. Cần dặn dò cẩn thận khoảng cách giữa 2 lần uống để tránh suy gan cấp.'
+      },
+      {
+        customerName: 'Bạn Linh - Sinh viên (20 tuổi)',
+        avatar: '👩‍🎓',
+        caseType: 'Dị ứng thời tiết (OTC)',
+        symptom: '"Em cứ hễ trở trời sáng sớm là hắt xì liên tục cả chục cái, mũi ngứa ran chảy nước trong, khó chịu quá dược sĩ!"',
+        correctDrugId: 'loratadine',
+        correctCounselingId: 'counsel_lora',
+        counselingOptions: [
+          { id: 'counsel_lora', text: 'Thuốc kháng Histamin thế hệ 2 ít gây buồn ngủ hơn, ngày chỉ cần uống 1 viên duy nhất.' },
+          { id: 'counsel_wrong_ab', text: 'Cái này phải uống ngay kháng sinh 7 ngày mới tiệt nọc vi khuẩn.' },
+          { id: 'counsel_wrong_cold', text: 'Tối trước khi ngủ nhớ uống nước đá lạnh để hạ nhiệt cuống họng.' }
+        ],
+        tipText: 'Viêm mũi dị ứng dùng kháng Histamin H1 (Loratadine). Không lạm dụng kháng sinh khi không có nhiễm khuẩn.'
+      },
+      {
+        customerName: 'Anh Tuấn - Lập trình viên (28 tuổi)',
+        avatar: '👨‍💻',
+        caseType: 'Rối loạn tiêu hóa cấp',
+        symptom: '"Tối qua tôi ăn hải sản vỉa hè, sáng nay đi ngoài 4-5 lần mất nước lả cả người, bụng sôi ùng ục, bán gấp thuốc cầm với bù nước!"',
+        correctDrugId: 'oresol',
+        correctCounselingId: 'counsel_oresol',
+        counselingOptions: [
+          { id: 'counsel_oresol', text: 'Phải pha đúng chuẩn thể tích nước ghi trên gói, uống từng ngụm nhỏ, không pha quá đặc!' },
+          { id: 'counsel_oresol_bad', text: 'Pha thật đặc với ít nước cho nhanh bù muối khoáng.' },
+          { id: 'counsel_milk', text: 'Nhịn uống nước hoàn toàn để ruột khô ráo mau cầm tiêu chảy.' }
+        ],
+        tipText: 'Pha sai tỷ lệ Oresol có thể làm rối loạn điện giải nặng nề hoặc phù não!'
+      },
+      {
+        customerName: 'Chị Mai - Nhân viên văn phòng (32 tuổi)',
+        avatar: '👩‍💼',
+        caseType: 'Đơn thuốc Viêm họng cấp (Rx)',
+        symptom: '"Bác sĩ khám bảo tôi bị viêm amidan có mủ và kê đơn Amoxicillin. Nhà thuốc lấy đúng loại theo toa giúp tôi nhé."',
+        correctDrugId: 'amoxicillin',
+        correctCounselingId: 'counsel_amox',
+        counselingOptions: [
+          { id: 'counsel_amox', text: 'Bắt buộc uống đủ liều 5-7 ngày theo đơn, không tự ý ngừng giữa chừng khi vừa thấy đỡ sốt!' },
+          { id: 'counsel_amox_stop', text: 'Uống 1-2 hôm thấy hết rát họng thì cất đi dành lần sau uống tiếp.' },
+          { id: 'counsel_amox_double', text: 'Nếu quên một liều thì lần sau uống bù gấp 3 lần.' }
+        ],
+        tipText: 'Tuân thủ đủ phác đồ kháng sinh là nguyên tắc vàng để ngăn chặn vi khuẩn kháng thuốc (AMR).'
+      },
+      {
+        customerName: 'Cô Bảy - Bán rau (55 tuổi)',
+        avatar: '🧕',
+        caseType: 'Ho kích ứng & Rát cổ',
+        symptom: '"Mấy hôm nay trời trở gió, cổ họng cô cứ ngứa ngáy ho rũ rượi từng cơn, rát bỏng cuống họng, có thuốc gì êm dịu không con?"',
+        correctDrugId: 'siro-ho',
+        correctCounselingId: 'counsel_siro',
+        counselingOptions: [
+          { id: 'counsel_siro', text: 'Uống siro thảo dược nhấp từng ngụm nhỏ để ngậm lâu trong họng, kiêng uống nước đá cay nóng.' },
+          { id: 'counsel_bad', text: 'Cứ ho là mua thuốc kháng sinh mạnh nhất uống dập liền.' },
+          { id: 'counsel_bad_2', text: 'Xúc họng bằng cồn 70 độ để sát khuẩn.' }
+        ],
+        tipText: 'Siro thảo dược an toàn, làm dịu niêm mạc hầu họng bị tổn thương.'
+      },
+      {
+        customerName: 'Chú Ba - Tài xế xe buýt (49 tuổi)',
+        avatar: '👨‍✈️',
+        caseType: 'Mỏi mệt & Suy giảm đề kháng',
+        symptom: '"Chú chạy xe ca đêm liên tục nên người uể oải, sức đề kháng kém hay ốm vặt, cháu có viên sủi nào bồi bổ cơ thể không?"',
+        correctDrugId: 'c-sui',
+        correctCounselingId: 'counsel_csui',
+        counselingOptions: [
+          { id: 'counsel_csui', text: 'Thả viên sủi tan hoàn toàn trong ly nước đầy, nên uống vào ban ngày sau ăn sáng, tránh uống chiều tối.' },
+          { id: 'counsel_csui_night', text: 'Uống ngay trước khi đi ngủ vào ban đêm để kích thích ngủ ngon.' },
+          { id: 'counsel_csui_dry', text: 'Bỏ nguyên viên vào miệng nhai nuốt trực tiếp như kẹo.' }
+        ],
+        tipText: 'Vitamin C liều cao uống chiều tối dễ gây mất ngủ và lắng đọng tạo sỏi thận (oxalat).'
+      }
+    ];
+
+    let gameState = {
+      score: 0,
+      money: 0,
+      reputation: 100,
+      currentCustomerIndex: 0,
+      selectedDrug: null,
+      selectedCounselingId: null,
+      patienceTimeLeft: 100,
+      patienceTimer: null,
+      servedCount: 0
+    };
+
+    function renderDrugsShelf(filter = 'all') {
+      const grid = document.getElementById('drugs-grid');
+      grid.innerHTML = '';
+
+      const filtered = filter === 'all' 
+        ? DRUG_DATABASE 
+        : DRUG_DATABASE.filter(d => d.cat === filter);
+
+      filtered.forEach(drug => {
+        const isSelected = gameState.selectedDrug && gameState.selectedDrug.id === drug.id;
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-2xl bg-gradient-to-br ${drug.color} border cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-col justify-between ${isSelected ? 'ring-4 ring-emerald-400 border-white' : 'border-slate-700/60 hover:border-slate-500'}`;
+        card.onclick = () => selectDrug(drug);
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-3xl">${drug.icon}</span>
+              <span class="text-[10px] font-bold bg-slate-900/80 px-2 py-0.5 rounded-full text-slate-300">
+                ${drug.type}
+              </span>
+            </div>
+            <h4 class="font-extrabold text-xs sm:text-sm text-white mt-2 leading-tight">${drug.name}</h4>
+            <p class="text-[11px] text-slate-300 mt-1 line-clamp-2">${drug.desc}</p>
+          </div>
+          <div class="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-xs">
+            <span class="font-bold text-amber-300">${drug.price.toLocaleString('vi-VN')} đ</span>
+            <span class="text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-lg shadow">Chọn</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    /* Filter Shelf tabs */
+    function filterShelf(category) {
+      soundClick();
+      document.querySelectorAll('.cat-tab').forEach(tab => {
+        tab.classList.remove('bg-emerald-600', 'text-white');
+        tab.classList.add('bg-slate-800', 'text-slate-300');
+      });
+      event.target.classList.remove('bg-slate-800', 'text-slate-300');
+      event.target.classList.add('bg-emerald-600', 'text-white');
+      renderDrugsShelf(category);
+    }
+
+    /* Select Medicine into Dispense Tray */
+    function selectDrug(drug) {
+      soundClick();
+      gameState.selectedDrug = drug;
+      renderTray();
+      renderDrugsShelf();
+    }
+
+    function clearTray() {
+      soundClick();
+      gameState.selectedDrug = null;
+      renderTray();
+      renderDrugsShelf();
+    }
+
+    function renderTray() {
+      const tray = document.getElementById('medicine-tray');
+      if (!gameState.selectedDrug) {
+        tray.innerHTML = `<span class="text-slate-400">Chưa chọn thuốc nào từ kệ thuốc bên phải...</span>`;
+      } else {
+        const d = gameState.selectedDrug;
+        tray.innerHTML = `
+          <div class="flex items-center gap-3 bg-slate-900 border border-emerald-500/50 px-3 py-2 rounded-xl text-left w-full">
+            <span class="text-2xl">${d.icon}</span>
+            <div class="flex-1">
+              <div class="font-bold text-emerald-300 text-xs sm:text-sm">${d.name}</div>
+              <div class="text-[10px] text-slate-400">${d.type} • Giá: ${d.price.toLocaleString('vi-VN')} đ</div>
+            </div>
+            <button onclick="clearTray()" class="text-rose-400 text-sm font-black px-2 hover:text-rose-200">✕</button>
+          </div>
+        `;
+      }
+    }
+
+    function loadCustomer(index) {
+      const c = CUSTOMER_CASES[index % CUSTOMER_CASES.length];
+      document.getElementById('customer-avatar').innerText = c.avatar;
+      document.getElementById('customer-name').innerText = c.customerName;
+      document.getElementById('case-badge').innerText = c.caseType;
+      document.getElementById('symptom-text').innerText = c.symptom;
+
+      // Render counseling radio options
+      const optContainer = document.getElementById('counseling-options');
+      optContainer.innerHTML = '';
+      c.counselingOptions.forEach((opt, idx) => {
+        const label = document.createElement('label');
+        label.className = "flex items-start gap-2 p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 cursor-pointer border border-slate-700 text-xs transition-colors";
+        label.innerHTML = `
+          <input type="radio" name="counseling" value="${opt.id}" class="mt-0.5 text-emerald-500 focus:ring-emerald-400" onchange="selectCounseling('${opt.id}')">
+          <span class="text-slate-200 leading-snug">${opt.text}</span>
+        `;
+        optContainer.appendChild(label);
+      });
+
+      // Reset selection
+      gameState.selectedDrug = null;
+      gameState.selectedCounselingId = null;
+      renderTray();
+      renderDrugsShelf();
+
+      // Start Patience Countdown Timer
+      startPatienceTimer();
+    }
+
+    function selectCounseling(id) {
+      soundClick();
+      gameState.selectedCounselingId = id;
+    }
+
+    function startPatienceTimer() {
+      if (gameState.patienceTimer) clearInterval(gameState.patienceTimer);
+      gameState.patienceTimeLeft = 100;
+
+      const bar = document.getElementById('patience-bar');
+      bar.style.width = '100%';
+      bar.className = "bg-emerald-500 h-2.5 rounded-full transition-all duration-300";
+
+      gameState.patienceTimer = setInterval(() => {
+        gameState.patienceTimeLeft -= 2;
+        bar.style.width = `${Math.max(0, gameState.patienceTimeLeft)}%`;
+
+        if (gameState.patienceTimeLeft <= 40) {
+          bar.className = "bg-amber-500 h-2.5 rounded-full transition-all duration-300";
+        }
+        if (gameState.patienceTimeLeft <= 20) {
+          bar.className = "bg-rose-500 h-2.5 rounded-full transition-all duration-300";
+        }
+
+        if (gameState.patienceTimeLeft <= 0) {
+          clearInterval(gameState.patienceTimer);
+          customerWalkOut();
+        }
+      }, 500); // 25 seconds total patience
+    }
+
+    /* Customer leaves if waited too long */
+    function customerWalkOut() {
+      soundError();
+      gameState.reputation = Math.max(0, gameState.reputation - 15);
+      updateStats();
+
+      showModal({
+        icon: '😡',
+        cardBorder: 'border-rose-500',
+        title: 'Khách hàng bỏ về!',
+        desc: 'Dược sĩ tra thuốc quá lâu khiến người bệnh mất kiên nhẫn. Uy tín tiệm thuốc bị trừ 15%!',
+        breakdown: `
+          <div class="text-rose-600 font-bold">- 15% Uy tín cửa tiệm</div>
+          <div class="text-slate-500">Mẹo: Quan sát triệu chứng nhanh và chuẩn bị sẵn hoạt chất trong đầu nhé!</div>
+        `
+      });
+    }
+
+    function submitPrescription() {
+      if (!gameState.selectedDrug) {
+        soundError();
+        showNotification("Vui lòng chọn một loại thuốc trên kệ trước khi bán!");
+        return;
+      }
+
+      if (!gameState.selectedCounselingId) {
+        soundError();
+        showNotification("Đừng quên chọn 'Lời dặn dược sĩ' để hoàn tất đơn tư vấn!");
+        return;
+      }
+
+      clearInterval(gameState.patienceTimer);
+
+      const currentCase = CUSTOMER_CASES[gameState.currentCustomerIndex % CUSTOMER_CASES.length];
+      const isDrugCorrect = gameState.selectedDrug.id === currentCase.correctDrugId;
+      const isCounselCorrect = gameState.selectedCounselingId === currentCase.correctCounselingId;
+
+      if (isDrugCorrect && isCounselCorrect) {
+        // Perfect dispensing
+        soundSuccess();
+        setTimeout(soundCoin, 300);
+        const earnedMoney = gameState.selectedDrug.price;
+        const earnedScore = 50 + Math.floor(gameState.patienceTimeLeft / 2);
+        gameState.money += earnedMoney;
+        gameState.score += earnedScore;
+        gameState.reputation = Math.min(100, gameState.reputation + 5);
+        gameState.servedCount++;
+
+        showModal({
+          icon: '🌟',
+          cardBorder: 'border-emerald-500',
+          title: 'Tư Vấn Chuẩn Dược Sĩ!',
+          desc: 'Khách hàng vô cùng cảm kích trước lời dặn chuyên môn tỉ mỉ và loại thuốc đúng bệnh của bạn.',
+          breakdown: `
+            <div class="flex justify-between text-emerald-700 font-bold">
+              <span>Tiền thuốc:</span>
+              <span>+${earnedMoney.toLocaleString('vi-VN')} đ</span>
+            </div>
+            <div class="flex justify-between text-blue-700 font-bold">
+              <span>Điểm Dược học:</span>
+              <span>+${earnedScore} exp</span>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-2 border-t pt-1 italic">
+              💡 ${currentCase.tipText}
+            </div>
+          `
+        });
+      } else if (isDrugCorrect && !isCounselCorrect) {
+        // Correct drug, wrong advice
+        soundError();
+        const earnedMoney = gameState.selectedDrug.price;
+        gameState.money += earnedMoney;
+        gameState.score += 15;
+        gameState.reputation = Math.max(0, gameState.reputation - 5);
+        gameState.servedCount++;
+
+        showModal({
+          icon: '⚠️',
+          cardBorder: 'border-amber-500',
+          title: 'Thuốc đúng nhưng Dặn dò sai!',
+          desc: 'Thuốc chọn đúng hoạt chất, tuy nhiên lời dặn dược sĩ có nguy cơ gây biến chứng hoặc tác dụng phụ.',
+          breakdown: `
+            <div class="text-amber-800 font-bold">+${earnedMoney.toLocaleString('vi-VN')} đ (vẫn thu tiền)</div>
+            <div class="text-rose-600 font-bold">- 5% Uy tín (Do dặn dò sai kiến thức dược lý)</div>
+            <div class="text-[11px] text-slate-500 mt-2 border-t pt-1">
+              💡 <strong>Lời khuyên chuẩn:</strong> ${currentCase.counselingOptions.find(o => o.id === currentCase.correctCounselingId).text}
+            </div>
+          `
+        });
+      } else {
+        // Wrong drug
+        soundError();
+        gameState.reputation = Math.max(0, gameState.reputation - 20);
+        gameState.servedCount++;
+
+        showModal({
+          icon: '❌',
+          cardBorder: 'border-rose-600',
+          title: 'Sai Lầm Kê Đơn Nghiêm Trọng!',
+          desc: 'Thuốc bạn đưa không đúng với chỉ định hoặc chống chỉ định với triệu chứng của người bệnh!',
+          breakdown: `
+            <div class="text-rose-600 font-bold">- 20% Uy tín nhà thuốc</div>
+            <div class="text-slate-600">Khách từ chối nhận thuốc và phàn nàn lên thanh tra sở Y Tế!</div>
+            <div class="text-[11px] text-slate-500 mt-2 border-t pt-1">
+              💡 Bệnh nhân cần: <strong>${DRUG_DATABASE.find(d => d.id === currentCase.correctDrugId).name}</strong>
+            </div>
+          `
+        });
+      }
+
+      updateStats();
+    }
+
+    function updateStats() {
+      document.getElementById('money-display').innerText = gameState.money.toLocaleString('vi-VN') + ' đ';
+      document.getElementById('score-display').innerText = gameState.score;
+      document.getElementById('rep-display').innerText = gameState.reputation + '%';
+
+      // Update Rank according to score
+      const rankEl = document.getElementById('pharmacist-rank');
+      if (gameState.score > 400) {
+        rankEl.innerText = "Cấp bậc: 👑 Chủ Chuỗi Nhà Thuốc";
+      } else if (gameState.score > 200) {
+        rankEl.innerText = "Cấp bậc: 🎓 Dược Sĩ Đại Học";
+      } else if (gameState.score > 80) {
+        rankEl.innerText = "Cấp bậc: 🩺 Dược Sĩ Trực Quầy";
+      } else {
+        rankEl.innerText = "Cấp bậc: 🌱 Dược Sĩ Tập Sự";
+      }
+
+      // Check game over
+      if (gameState.reputation <= 0) {
+        showModal({
+          icon: '🏥💥',
+          cardBorder: 'border-red-700',
+          title: 'Nhà Thuốc Bị Đình Chỉ Hoạt Động!',
+          desc: 'Uy tín tiệm thuốc giảm về 0%. Bạn cần ôn luyện lại Dược lý lâm sàng trước khi mở lại quầy thuốc!',
+          breakdown: `
+            <button onclick="resetGame()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold mt-2">Chơi lại từ đầu</button>
+          `
+        });
+      }
+    }
+
+    function resetGame() {
+      gameState.score = 0;
+      gameState.money = 0;
+      gameState.reputation = 100;
+      gameState.currentCustomerIndex = 0;
+      updateStats();
+      closeResultModal();
+      loadCustomer(0);
+    }
+
+    /* Display Modal Helper */
+    function showModal({ icon, cardBorder, title, desc, breakdown }) {
+      const modal = document.getElementById('result-modal');
+      const card = document.getElementById('modal-card');
+      card.className = `bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl transform transition-all border-4 ${cardBorder}`;
+      document.getElementById('modal-icon').innerText = icon;
+      document.getElementById('modal-title').innerText = title;
+      document.getElementById('modal-desc').innerText = desc;
+      document.getElementById('modal-breakdown').innerHTML = breakdown;
+      modal.classList.remove('hidden');
+    }
+
+    function closeResultModal() {
+      soundClick();
+      document.getElementById('result-modal').classList.add('hidden');
+      if (gameState.reputation > 0) {
+        gameState.currentCustomerIndex++;
+        loadCustomer(gameState.currentCustomerIndex);
+      }
+    }
+
+    /* Toast Notification */
+    function showNotification(msg) {
+      const toast = document.createElement('div');
+      toast.className = "fixed top-16 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 font-bold px-4 py-2.5 rounded-2xl shadow-2xl text-xs z-50 border-2 border-amber-300 animate-bounce";
+      toast.innerText = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2500);
+    }
+
+    /* Handbook & Deploy Guide Modals */
+    function openHandbook() {
+      soundClick();
+      document.getElementById('handbook-modal').classList.remove('hidden');
+    }
+    function closeHandbook() {
+      soundClick();
+      document.getElementById('handbook-modal').classList.add('hidden');
+    }
+
+    function openDeployGuide() {
+      soundClick();
+      document.getElementById('deploy-modal').classList.remove('hidden');
+    }
+    function closeDeployGuide() {
+      soundClick();
+      document.getElementById('deploy-modal').classList.add('hidden');
+    }
+
+    /* Keyboard shortcut: Space to advance to next customer */
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        const modal = document.getElementById('result-modal');
+        if (!modal.classList.contains('hidden') && gameState.reputation > 0) {
+          e.preventDefault();
+          closeResultModal();
+        }
+      }
+    });
+
+    window.onload = function() {
+      renderDrugsShelf();
+      loadCustomer(0);
+      updateStats();
+
+      // Dynamic Clock simulator
+      let hours = 8, minutes = 30;
+      setInterval(() => {
+        minutes += 5;
+        if (minutes >= 60) {
+          minutes = 0;
+          hours++;
+          if (hours >= 22) hours = 8;
+        }
+        const formatted = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${hours >= 12 ? 'PM' : 'AM'}`;
+        document.getElementById('clock-display').innerText = formatted;
+      }, 4000);
+    };
+  </script>
+</body>
+</html>
